@@ -27,6 +27,33 @@ app.post("/login", (req, res) => {
   }
 });
 
+const authenticateToken = (req, res, next) => {
+  const token = req.headers["authorization"];
+
+  if (!token) {
+    return res.status(403).json({ message: "Token não fornecido" });
+  }
+
+  jwt.verify(token, SECRET_KEY, (err, user) => {
+    if(err) return res.status(403).json({ message: "Token inválido" });
+
+    req.user = user;
+    console.log(`Usuário autenticado: ${user}`);
+    next();
+  });
+};
+
+app.get("/protected", authenticateToken, (req, res) => {
+  res.status(200).json({ message: "Acesso concedido à rota protegida" });
+});
+
+app.get("/admin", authenticateToken, (req, res) => {
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ message: "Acesso negado" })
+  }
+  res.status(200).json({ message: "Área do administrador" })
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
